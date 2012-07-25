@@ -15,7 +15,6 @@ func Check(c *SlowCMWC, max int) int {
   seq := make([]byte, max*3)
   for i := range seq {
     seq[i] = byte(c.Next())
-    print(seq[i], "\n")
   }
   res := stringz.Find(seq[0:10]).In(seq)
   if len(res) <= 1 {
@@ -113,19 +112,36 @@ type CMWC32 struct {
   Q []uint32
   A uint32
   C uint32
-  N int
+  N uint32
 
   R_mask uint32
 }
 
 func (c *CMWC32) Next() uint32 {
-  C := c.C
-  xn := 0xffffffff - (uint64(c.A)*uint64(c.Q[c.N]) + uint64(C))
-  cn := (uint64(c.A)*uint64(c.Q[c.N]) + uint64(C)) >> 32
-  c.N = int((uint32(c.N) + 1) & c.R_mask)
-  c.Q[c.N] = uint32(xn)
-  c.C = uint32(cn)
-  return uint32(xn)
+  c.N = (c.N + 1) & c.R_mask
+  xp := uint64(c.Q[int(c.N)])
+  ax_c := uint64(c.A)*xp + uint64(c.C)
+  xn := uint32(0xffffffff - ax_c)
+  cn := uint32(ax_c >> 32)
+  c.Q[c.N] = xn
+  c.C = cn
+  return xn
+}
+
+func (c *CMWC32) Int63() int64 {
+  return int64((uint64(c.Next())<<32 | uint64(c.Next())) & 0x7fffffffffffffff)
+}
+
+func (c *CMWC32) Seed(seed int64) {
+  for i := 0; i < len(c.Q)-4; i += 4 {
+    c.Q[i] = uint32(seed & 0x00000000ffffffff)
+    c.Q[i+1] = uint32(seed >> 32)
+    c.Q[i+2] = c.Q[i] ^ 0x3596ac35
+    c.Q[i+3] = c.Q[i+1] ^ 0x96ac3535
+  }
+  for i := 0; i < len(c.Q)*10; i++ {
+    c.Next()
+  }
 }
 
 func MakeSlowCMWC(a, b, r uint64) *SlowCMWC {
@@ -154,8 +170,8 @@ func (c *SlowCMWC) Seed(seed int64) {
 }
 
 func (c *SlowCMWC) Next() uint32 {
-  px := c.Q[c.N]
   c.N = (c.N + 1) % len(c.Q)
+  px := c.Q[c.N]
   C := c.C
   xn := c.B - 1 - (c.A*px + C)
   xn = xn % c.B
