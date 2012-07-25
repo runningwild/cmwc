@@ -133,12 +133,20 @@ func (c *CMWC32) Int63() int64 {
 }
 
 func (c *CMWC32) Seed(seed int64) {
-  for i := 0; i < len(c.Q)-4; i += 4 {
-    c.Q[i] = uint32(seed & 0x00000000ffffffff)
+  var foo uint32 = 0x3596ac35
+  for i := 0; i < len(c.Q)-3; i += 4 {
+    c.Q[i] = uint32(seed & 0xffffffff)
     c.Q[i+1] = uint32(seed >> 32)
-    c.Q[i+2] = c.Q[i] ^ 0x3596ac35
-    c.Q[i+3] = c.Q[i+1] ^ 0x96ac3535
+    c.Q[i+2] = c.Q[i] ^ foo
+    c.Q[i+3] = c.Q[i+1] ^ foo
+    foo = (foo >> 3) | (foo << 29)
   }
+  for i := len(c.Q) - len(c.Q)%4; i < len(c.Q); i++ {
+    c.Q[i] = foo
+    foo = (foo >> 3) | (foo << 29)
+  }
+  c.C = uint32((seed & 0xffffffff) ^ (seed >> 32))
+  c.N = 0
   for i := 0; i < len(c.Q)*10; i++ {
     c.Next()
   }

@@ -52,6 +52,40 @@ func CMWCSpec(c gospec.Context) {
   })
 }
 
+func CMWCRandSpec(c gospec.Context) {
+  c.Specify("CMWC32 conforms properly to math/rand.Rand interface.", func() {
+    c1 := rrand.MakeCmwc(3278470471, 4)
+    c2 := rrand.MakeCmwc(3278470471, 4)
+    c1.Seed(1234)
+    c2.Seed(4321)
+
+    // Make sure that we don't generate numbers with the most significant
+    // bit set
+    for i := 0; i < 1000000; i++ {
+      v1 := c1.Int63()
+      c.Expect(v1 >= 0, Equals, true)
+      if v1 < 0 {
+        break
+      }
+      c2.Int63()
+    }
+
+    // Make sure that two generators with the same parameters, but in
+    // different states, are in the exact same state when seeded with
+    // the same seed.
+    c1.Seed(0xabcdef12)
+    c2.Seed(0xabcdef12)
+    for i := 0; i < 10000; i++ {
+      v1 := c1.Int63()
+      v2 := c2.Int63()
+      c.Expect(v1, Equals, v2)
+      if v1 != v2 {
+        break
+      }
+    }
+  })
+}
+
 func CMWCGobSpec(c gospec.Context) {
   c.Specify("CMWC32 gobs and ungobs properly.", func() {
     // Set up c1 and c2 and run them for a while, then we'll c2 and make

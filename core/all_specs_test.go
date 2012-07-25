@@ -10,6 +10,7 @@ func TestAllSpecs(t *testing.T) {
   r := gospec.NewRunner()
   r.AddSpec(CMWCSpec)
   r.AddSpec(SlowCMWCSpec)
+  r.AddSpec(CMWCRandSpec)
   r.AddSpec(CMWCGobSpec)
   gospec.MainGoTest(r, t)
 }
