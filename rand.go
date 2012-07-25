@@ -4,6 +4,8 @@ import (
   "fmt"
   "runningwild/rand/core"
   "math/big"
+  "bytes"
+  "encoding/binary"
 )
 
 type Cmwc struct {
@@ -18,6 +20,34 @@ func (c *Cmwc) Int63() int64 {
 }
 func (c *Cmwc) Seed(seed int64) {
   c.cmwc.Seed(seed)
+}
+func (c *Cmwc) GobEncode() ([]byte, error) {
+  buf := bytes.NewBuffer(make([]byte, 4*(len(c.cmwc.Q)+4))[0:0])
+  binary.Write(buf, binary.LittleEndian, c.cmwc.A)
+  binary.Write(buf, binary.LittleEndian, c.cmwc.C)
+  binary.Write(buf, binary.LittleEndian, c.cmwc.N)
+  binary.Write(buf, binary.LittleEndian, uint32(len(c.cmwc.Q)))
+  err := binary.Write(buf, binary.LittleEndian, c.cmwc.Q)
+  if err != nil {
+    return nil, err
+  }
+  return buf.Bytes(), nil
+}
+func (c *Cmwc) GobDecode(data []byte) error {
+  c.cmwc = &core.CMWC32{}
+  buf := bytes.NewBuffer(data)
+  binary.Read(buf, binary.LittleEndian, &c.cmwc.A)
+  binary.Read(buf, binary.LittleEndian, &c.cmwc.C)
+  binary.Read(buf, binary.LittleEndian, &c.cmwc.N)
+  var length uint32
+  err := binary.Read(buf, binary.LittleEndian, &length)
+  if err != nil {
+    return nil
+  }
+  c.cmwc.Q = make([]uint32, length)
+  err = binary.Read(buf, binary.LittleEndian, c.cmwc.Q)
+  c.cmwc.R_mask = uint32(len(c.cmwc.Q)) - 1
+  return err
 }
 
 func main() {

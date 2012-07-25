@@ -7,6 +7,8 @@ import (
   "runningwild/rand/core"
   rrand "runningwild/rand"
   "math/rand"
+  "bytes"
+  "encoding/gob"
 )
 
 func SlowCMWCSpec(c gospec.Context) {
@@ -45,6 +47,46 @@ func CMWCSpec(c gospec.Context) {
       c.Expect(f, Equals, s)
       if f != s {
         break
+      }
+    }
+  })
+}
+
+func CMWCGobSpec(c gospec.Context) {
+  c.Specify("CMWC32 gobs and ungobs properly.", func() {
+    // Set up c1 and c2 and run them for a while, then we'll c2 and make
+    // sure it runs the same when it is ungobbed.
+    c1 := rrand.MakeCmwc(3278470471, 4)
+    c2 := rrand.MakeCmwc(3278470471, 4)
+    c1.Seed(0x12345678)
+    c2.Seed(0x12345678)
+    for i := 0; i < 100000; i++ {
+      c1.Int63()
+      c2.Int63()
+    }
+    buf := bytes.NewBuffer(nil)
+    enc := gob.NewEncoder(buf)
+    err := enc.Encode(c2)
+    c.Expect(err, Equals, error(nil))
+    if err != nil {
+      return
+    }
+    dec := gob.NewDecoder(bytes.NewBuffer(buf.Bytes()))
+
+    // c2 is going to be constructed from the gobbed data only
+    var c3 rrand.Cmwc
+    err = dec.Decode(&c3)
+    c.Expect(err, Equals, error(nil))
+    if err != nil {
+      return
+    }
+    for i := 0; i < 100000; i++ {
+      // Checking c2 against c2 for many iterations.
+      v1 := c1.Int63()
+      v2 := c3.Int63()
+      c.Expect(v1, Equals, v2)
+      if v1 != v2 {
+        return
       }
     }
   })
