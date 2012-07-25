@@ -1,11 +1,11 @@
-package rand
+package cmwc
 
 import (
   "fmt"
-  "runningwild/rand/core"
   "math/big"
   "bytes"
   "encoding/binary"
+  "github.com/runningwild/cmwc/core"
 )
 
 type Cmwc struct {

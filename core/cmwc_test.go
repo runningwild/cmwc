@@ -4,8 +4,8 @@ import (
   . "github.com/orfjackal/gospec/src/gospec"
   "github.com/orfjackal/gospec/src/gospec"
   "testing"
-  "runningwild/rand/core"
-  rrand "runningwild/rand"
+  "github.com/runningwild/cmwc/core"
+  "github.com/runningwild/cmwc"
   "math/rand"
   "bytes"
   "encoding/gob"
@@ -54,8 +54,8 @@ func CMWCSpec(c gospec.Context) {
 
 func CMWCRandSpec(c gospec.Context) {
   c.Specify("CMWC32 conforms properly to math/rand.Rand interface.", func() {
-    c1 := rrand.MakeCmwc(3278470471, 4)
-    c2 := rrand.MakeCmwc(3278470471, 4)
+    c1 := cmwc.MakeCmwc(3278470471, 4)
+    c2 := cmwc.MakeCmwc(3278470471, 4)
     c1.Seed(1234)
     c2.Seed(4321)
 
@@ -90,8 +90,8 @@ func CMWCGobSpec(c gospec.Context) {
   c.Specify("CMWC32 gobs and ungobs properly.", func() {
     // Set up c1 and c2 and run them for a while, then we'll c2 and make
     // sure it runs the same when it is ungobbed.
-    c1 := rrand.MakeCmwc(3278470471, 4)
-    c2 := rrand.MakeCmwc(3278470471, 4)
+    c1 := cmwc.MakeCmwc(3278470471, 4)
+    c2 := cmwc.MakeCmwc(3278470471, 4)
     c1.Seed(0x12345678)
     c2.Seed(0x12345678)
     for i := 0; i < 100000; i++ {
@@ -108,7 +108,7 @@ func CMWCGobSpec(c gospec.Context) {
     dec := gob.NewDecoder(bytes.NewBuffer(buf.Bytes()))
 
     // c2 is going to be constructed from the gobbed data only
-    var c3 rrand.Cmwc
+    var c3 cmwc.Cmwc
     err = dec.Decode(&c3)
     c.Expect(err, Equals, error(nil))
     if err != nil {
@@ -137,7 +137,7 @@ func BenchmarkCMWC32Next(b *testing.B) {
 
 func BenchmarkCMWC32AsRandSource(b *testing.B) {
   b.StopTimer()
-  c := rrand.MakeCmwc(3278470471, 4)
+  c := cmwc.MakeCmwc(3278470471, 4)
   r := rand.New(c)
   b.StartTimer()
   for i := 0; i < b.N; i++ {
