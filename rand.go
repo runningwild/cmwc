@@ -8,8 +8,8 @@ import (
 
 func main() {
   var a, b, r uint64
-  b = uint64(1 << 31)
-  r = uint64(32)
+  b = uint64(1 << 4)
+  r = uint64(1 << 1)
   var p *big.Int
   for i := 0; i < 10; i++ {
     a, p = core.GenerateRandomParams(b, r)

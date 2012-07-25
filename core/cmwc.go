@@ -10,11 +10,12 @@ import (
 
 func Check(c *SlowCMWC, max int) int {
   for i := range c.Q {
-    c.Q[i] = uint64(source.Uint32() % c.B)
+    c.Q[i] = uint64(uint64(source.Uint32()) % c.B)
   }
   seq := make([]byte, max*3)
   for i := range seq {
-    seq[i] = byte(c.Int63())
+    seq[i] = byte(c.Next())
+    print(seq[i], "\n")
   }
   res := stringz.Find(seq[0:10]).In(seq)
   if len(res) <= 1 {
@@ -84,7 +85,7 @@ func GenerateRandomParams(b, r uint64) (a uint64, period *big.Int) {
     if p.ProbablyPrime(20) {
       order := findOrder(A.Int64(), B.Int64(), R.Int64())
       if order != nil {
-        if int64(int32(A.Int64())) != A.Int64() {
+        if int64(uint32(A.Int64())) != A.Int64() {
           fmt.Printf("WHAT!!!!\n")
         }
         return uint64(A.Int64()), order
@@ -94,11 +95,44 @@ func GenerateRandomParams(b, r uint64) (a uint64, period *big.Int) {
   return 0, nil
 }
 
-func MakeSlowCMWC(a, b, r uint32) *SlowCMWC {
+func MakeCMWC32(a, lb2_r uint32) *CMWC32 {
+  r := uint32(1) << lb2_r
+  c := CMWC32{
+    Q:      make([]uint32, int(r)),
+    A:      a,
+    R_mask: r - 1,
+    C:      0,
+  }
+  for i := range c.Q {
+    c.Q[i] = uint32(0)
+  }
+  return &c
+}
+
+type CMWC32 struct {
+  Q []uint32
+  A uint32
+  C uint32
+  N int
+
+  R_mask uint32
+}
+
+func (c *CMWC32) Next() uint32 {
+  C := c.C
+  xn := 0xffffffff - (uint64(c.A)*uint64(c.Q[c.N]) + uint64(C))
+  cn := (uint64(c.A)*uint64(c.Q[c.N]) + uint64(C)) >> 32
+  c.N = int((uint32(c.N) + 1) & c.R_mask)
+  c.Q[c.N] = uint32(xn)
+  c.C = uint32(cn)
+  return uint32(xn)
+}
+
+func MakeSlowCMWC(a, b, r uint64) *SlowCMWC {
   var c SlowCMWC
   c.Q = make([]uint64, int(r))
-  c.C = 5
-  c.A = uint64(a)
+  c.C = 0
+  c.A = a
   c.B = b
   return &c
 }
@@ -108,9 +142,9 @@ func MakeSlowCMWC(a, b, r uint32) *SlowCMWC {
 type SlowCMWC struct {
   Q []uint64
   A uint64
-  C uint32
-  B uint32
+  C uint64
   N int
+  B uint64
 }
 
 func (c *SlowCMWC) Seed(seed int64) {
@@ -119,13 +153,14 @@ func (c *SlowCMWC) Seed(seed int64) {
   }
 }
 
-func (c *SlowCMWC) Int63() int64 {
+func (c *SlowCMWC) Next() uint32 {
+  px := c.Q[c.N]
   c.N = (c.N + 1) % len(c.Q)
   C := c.C
-  xn := uint64(c.B-1) - (c.A*c.Q[c.N] + uint64(C))
-  xn = (xn % uint64(c.B))
-  cn := (c.A*c.Q[c.N] + uint64(C)) / uint64(c.B)
+  xn := c.B - 1 - (c.A*px + C)
+  xn = xn % c.B
+  cn := (c.A*px + uint64(C)) / c.B
   c.Q[c.N] = xn
-  c.C = uint32(cn)
-  return int64(xn)
+  c.C = cn
+  return uint32(xn)
 }
