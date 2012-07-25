@@ -4,6 +4,7 @@ import (
   "fmt"
   "math/big"
   "math/rand"
+  crand "crypto/rand"
   "time"
   "github.com/runningwild/stringz"
 )
@@ -149,6 +150,21 @@ func (c *CMWC32) Seed(seed int64) {
   c.N = 0
   for i := 0; i < len(c.Q)*10; i++ {
     c.Next()
+  }
+}
+
+func (c *CMWC32) SeedWithDevRand() {
+  buf := make([]byte, len(c.Q)*4)
+  crand.Reader.Read(buf)
+  for i := range c.Q {
+    for j := 0; j < 4; j++ {
+      c.Q[i] |= uint32(buf[i*4+j]) << uint(4*j)
+    }
+  }
+  buf = buf[0:4]
+  crand.Reader.Read(buf)
+  for i := 0; i < 4; i++ {
+    c.Q[i] = uint32(buf[i]) << uint(i)
   }
 }
 

@@ -78,6 +78,11 @@ func (c *Cmwc) Seed(seed int64) {
   c.cmwc.Seed(seed)
 }
 
+// Uses crypto.Reader to seed the generator.
+func (c *Cmwc) SeedWithDevRand() {
+  c.cmwc.SeedWithDevRand()
+}
+
 func (c *Cmwc) GobEncode() ([]byte, error) {
   buf := bytes.NewBuffer(make([]byte, 4*(len(c.cmwc.Q)+4))[0:0])
   binary.Write(buf, binary.LittleEndian, c.cmwc.A)
