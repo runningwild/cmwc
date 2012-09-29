@@ -51,11 +51,11 @@
 package cmwc
 
 import (
-  "fmt"
-  "math/big"
   "bytes"
   "encoding/binary"
+  "fmt"
   "github.com/runningwild/cmwc/core"
+  "math/big"
 )
 
 type Cmwc struct {
@@ -65,6 +65,11 @@ type Cmwc struct {
 // Creates a Cmwc RNG with (A, B, R) = (a, 2^32, 1<<lb2_r)
 func MakeCmwc(a, lb2_r uint32) *Cmwc {
   return &Cmwc{core.MakeCMWC32(a, lb2_r)}
+}
+
+// Creates a Cmwc RNG with a very long period
+func MakeGoodCmwc() *Cmwc {
+  return &Cmwc{core.MakeCMWC32(3945340957, 5)}
 }
 
 // Int63 returns a non-negative pseudo-random 63-bit integer as an int64.
