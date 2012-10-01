@@ -1,12 +1,12 @@
 package core
 
 import (
+  crand "crypto/rand"
   "fmt"
+  "github.com/runningwild/stringz"
   "math/big"
   "math/rand"
-  crand "crypto/rand"
   "time"
-  "github.com/runningwild/stringz"
 )
 
 func Check(c *SlowCMWC, max int) int {
@@ -26,7 +26,8 @@ func Check(c *SlowCMWC, max int) int {
 
 // finds order of b in ab^r+1.  Assumes that b is a power of 2 and that
 // a is prime.
-func findOrder(a, b, r int64) *big.Int {
+// 2^guess is a lower bound on the return value
+func findOrder(a, b, r, guess int64) *big.Int {
   A := big.NewInt(a)
   B := big.NewInt(b)
   Br := big.NewInt(b)
@@ -36,13 +37,18 @@ func findOrder(a, b, r int64) *big.Int {
   one := big.NewInt(1)
   m.Add(m, one)
 
+  lower := big.NewInt(0)
+  lower.Exp(big.NewInt(2), big.NewInt(guess*32), nil)
+
   // First check all powers of two
   p := big.NewInt(2)
   for p.Cmp(Br) < 0 {
-    v := big.NewInt(0)
-    v.Exp(B, p, m)
-    if v.Cmp(one) == 0 {
-      return p
+    if p.Cmp(lower) > 0 {
+      v := big.NewInt(0)
+      v.Exp(B, p, m)
+      if v.Cmp(one) == 0 {
+        return p
+      }
     }
     p.Mul(p, big.NewInt(2))
   }
@@ -50,10 +56,12 @@ func findOrder(a, b, r int64) *big.Int {
   // now check all a*2^n
   p = big.NewInt(a)
   for p.Cmp(m) < 0 {
-    v := big.NewInt(0)
-    v.Exp(B, p, m)
-    if v.Cmp(one) == 0 {
-      return p
+    if p.Cmp(lower) > 0 {
+      v := big.NewInt(0)
+      v.Exp(B, p, m)
+      if v.Cmp(one) == 0 {
+        return p
+      }
     }
     p.Mul(p, big.NewInt(2))
   }
@@ -83,7 +91,7 @@ func GenerateRandomParams(b, r uint64) (a uint64, period *big.Int) {
     p.Mul(A, v)
     p.Add(p, one)
     if p.ProbablyPrime(20) {
-      order := findOrder(A.Int64(), B.Int64(), R.Int64())
+      order := findOrder(A.Int64(), B.Int64(), R.Int64(), R.Int64())
       if order != nil {
         if int64(uint32(A.Int64())) != A.Int64() {
           fmt.Printf("WHAT!!!!\n")
