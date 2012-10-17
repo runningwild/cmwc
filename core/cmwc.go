@@ -39,10 +39,11 @@ func findOrder(a, b, r, guess int64) *big.Int {
 
   lower := big.NewInt(0)
   lower.Exp(big.NewInt(2), big.NewInt(guess*32), nil)
-
+  higher := big.NewInt(0)
+  higher.Exp(big.NewInt(2), big.NewInt((r+8)*32), nil)
   // First check all powers of two
   p := big.NewInt(2)
-  for p.Cmp(Br) < 0 {
+  for p.Cmp(Br) < 0 && p.Cmp(higher) < 0 {
     if p.Cmp(lower) > 0 {
       v := big.NewInt(0)
       v.Exp(B, p, m)
@@ -55,7 +56,7 @@ func findOrder(a, b, r, guess int64) *big.Int {
 
   // now check all a*2^n
   p = big.NewInt(a)
-  for p.Cmp(m) < 0 {
+  for p.Cmp(m) < 0 && p.Cmp(higher) < 0 {
     if p.Cmp(lower) > 0 {
       v := big.NewInt(0)
       v.Exp(B, p, m)
@@ -172,7 +173,7 @@ func (c *CMWC32) SeedWithDevRand() {
   buf = buf[0:4]
   crand.Reader.Read(buf)
   for i := 0; i < 4; i++ {
-    c.Q[i] = uint32(buf[i]) << uint(i)
+    c.C |= uint32(buf[i]) << uint(i*8)
   }
 }
 
