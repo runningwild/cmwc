@@ -92,6 +92,12 @@ func (c *Cmwc) Int63() int64 {
   return c.cmwc.Int63()
 }
 
+// Returns a random uint32.  This is the raw output from a single iteration
+// of this generator.
+func (c *Cmwc) Uint32() uint32 {
+  return c.cmwc.Next()
+}
+
 // Seed uses the provided seed value to initialize the generator to a
 // deterministic state.
 func (c *Cmwc) Seed(seed int64) {
@@ -101,6 +107,20 @@ func (c *Cmwc) Seed(seed int64) {
 // Uses crypto.Reader to seed the generator.
 func (c *Cmwc) SeedWithDevRand() {
   c.cmwc.SeedWithDevRand()
+}
+
+func (c *Cmwc) Copy() *Cmwc {
+  var c2 Cmwc
+  c2.cmwc = &core.CMWC32{
+    A: c.cmwc.A,
+    C: c.cmwc.C,
+    N: c.cmwc.N,
+    Q: make([]uint32, len(c.cmwc.Q)),
+  }
+  for i := range c2.cmwc.Q {
+    c2.cmwc.Q[i] = c.cmwc.Q[i]
+  }
+  return &c2
 }
 
 func (c *Cmwc) GobEncode() ([]byte, error) {
